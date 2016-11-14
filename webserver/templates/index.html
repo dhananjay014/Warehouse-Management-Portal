@@ -1,29 +1,16 @@
+<!DOCTYPE html>
 <html>
-  <style>
-    body{ 
-      font-size: 15pt;
-      font-family: arial;
-    }
-  </style>
-
+<title>Warehouse Management Portal</title>
 
 <body>
-  <h1>Some famous Computer Scientists</h1>
-  <div>{{data}}</div>
+    <h1 style="text-align: center;">Warehouse Management Portal</h1>
 
-  <div>
-    {% for n in data %}
-    <div>{{n}}</div>
-    {% endfor %}
-  </div>
+    <div class="container" style="background-color:#f1f1f1;text-align: center;">
+        <p><a href="{{ url_for('gotoCustomerLogin') }}">Customer Login</a></p>
 
-<p><a href="/another">Go to the other page</a></p>
-
-<form method="POST" action="/add">
-<p>Name of new computer scientist: <input type="text" name="name"> <input type="submit" value="Add"></p>
-</form>
+        <p><a href="{{ url_for('gotoEmployeeLogin') }}">Employee Login</a></p>
+    </div>
 
 </body>
-
 
 </html>

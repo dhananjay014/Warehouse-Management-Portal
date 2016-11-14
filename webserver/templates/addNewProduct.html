@@ -1,0 +1,98 @@
+<html>
+<title>WMP</title>
+
+<head>
+
+    <style>
+        /*
+        form { border: 3px solid #f1f1f1; }
+*/
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+        
+        .home {
+            position: absolute;
+            top: 5;
+            right: 70;
+        }
+        
+        fieldset {
+            width: 500px;
+        }
+        
+        label.field {
+            text-align: right;
+            width: 150px;
+            float: left;
+        }
+        
+        input.textbox {
+            width: 300px;
+            float: left;
+        }
+    </style>
+
+</head>
+
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out
+        </a> {% endif %}
+    </div>
+    <div class=home>
+        {% if session.logged_in %}
+        <a href="{{ url_for('employeeDashboard') }}">Home</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Add New Product</h2>{% if messages %}{% for message in messages %}
+    <p class=error style="color: #D8000C;">{{ message }}</p>{% endfor %}{% endif %}
+    <form action="{{url_for('addProduct')}}" method="POST" class="form-horizontal">
+        <fieldset>
+            <p>
+                <label class="field" for="productName">Product Name:</label>
+                <input type="textbox" pattern="[a-zA-Z0-9]" name="productName">
+            </p>
+            <p>
+                <label class="field" for="productType">Product Type:</label>
+                <input type="textbox" name="productType">
+            </p>
+            <p>
+                <label class="field" for="price">Price per Unit:</label>
+                <input type="textbox" onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="price">
+            </p>
+            <p>
+                <label class="field" for="qtyinstock">Quantity in Stock:</label>
+                <input type="textbox" onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="qtyinstock">
+            </p>
+            <p>
+                <label class="field" for="factoryname">Factory Name:</label>
+                <input type="textbox" name="factoryname">
+            </p>
+            <p>
+                <label class="field" for="brand">Brand:</label>
+                <input type="textbox" name="brand">
+            </p>
+            <p>
+                <label class="field" for="factoryregion">Factory Region:</label>
+                <input type="textbox" name="factoryregion">
+            </p>
+            <p>
+                <label class="field" for="employeessn">Employee SSN:</label>
+                <select name="employeessn">
+                    <option></option>{% for s in slist %}
+                    <option>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <button style="margin-left: 4cm;" type="submit">Add</button>
+        </fieldset>
+    </form>
+</body>
+
+</html>

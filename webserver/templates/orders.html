@@ -1,0 +1,64 @@
+<html>
+<title>WMP</title>
+
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+    </style>
+</head>
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Orders</h2> {% if error %}
+    <p class=error style="color: #D8000C;"> {{ error }} {% else %}
+        <table id="ordersTable">
+            <tr>
+                <th>Order ID</th>
+                <th>Submitted Date</th>
+                <th>Estimated Delivery Date</th>
+                <th>Action</th>
+            </tr>
+            {% for order in data %}
+            <tr>
+                <td><a href='/orderDetails?orderid={{ order[0] }}'>{{ order[0] }}</a>
+                </td>
+                <td>{{ order[1] }}</td>
+                <td>{{ order[2] }}</td>
+                <form action="{{url_for('deleteOrder')}}" method="POST">
+                    <td>
+                        <input type="hidden" name="orderid" value={{ order[0] }}>
+                        <input type="submit" value="Delete">
+                    </td>
+                </form>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+</body>
+
+</html>

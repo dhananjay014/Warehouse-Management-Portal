@@ -1,0 +1,68 @@
+<html>
+<title>WMP</title>
+<style>
+    .topcorner {
+        position: absolute;
+        top: 5;
+        right: 10;
+    }
+    
+    fieldset {
+        width: 500px;
+    }
+    
+    legend {
+        font-size: 20px;
+    }
+    
+    label.field {
+        text-align: right;
+        width: 150px;
+        float: left;
+        font-weight: bold;
+    }
+    
+    input.textbox {
+        width: 300px;
+        float: left;
+    }
+    
+    .alignleft {
+        float: left;
+    }
+    
+    .alignright {
+        float: right;
+    }
+</style>
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out</a> {% endif %}
+    </div>
+    <h1 style="text-align: center;">Warehouse Management Portal</h1>
+    <h2>Welcome {{ empdata[0] }}</h2>
+    <div>
+        <div class="alignleft"><strong>Designation: </strong>{{ empdata[1]}}</div>
+        <div class="alignright"><strong>Email ID: </strong>{{ empdata[4]}}</div>
+    </div>
+    <br>
+    <br>
+    <div>
+        <div class="alignleft"><strong>Department: </strong>{{ empdata[2]}}</div>
+        <div class="alignright"><strong>Phone Number: </strong>+{{ empdata[3]}}</div>
+    </div>
+    <br>
+    <div class="container" style="background-color:#f1f1f1;">
+        <p><a href="/editProfile">Edit Profile</a></p>
+
+        <p><a href="{{ url_for('searchDirectory') }}">Search Directory</a></p>
+
+        <p><a href="{{ url_for('products') }}">View Ordered Products List</a></p>
+
+        <p><a href="{{ url_for('addNewProduct') }}">Add New Product</a></p>
+    </div>
+</body>
+
+</html>

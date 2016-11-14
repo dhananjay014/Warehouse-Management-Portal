@@ -1,180 +1,341 @@
-#!/usr/bin/env python2.7
-
-"""
-Columbia W4111 Intro to databases
-Example webserver
-
-To run locally
-
-    python server.py
-
-Go to http://localhost:8111 in your browser
-
-
-A debugger such as "pdb" may be helpful for debugging.
-Read about it online.
-"""
-
+import re
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, url_for, escape, session, flash, make_response
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
-
-
-#
-# The following uses the postgresql test.db -- you can use this for debugging purposes
-# However for the project you will need to connect to your Part 2 database in order to use the
-# data
-#
-# XXX: The URI should be in the format of: 
-#
-#     postgresql://USER:PASSWORD@<IP_OF_POSTGRE_SQL_SERVER>/postgres
-#
-# For example, if you had username ewu2493, password foobar, then the following line would be:
-#
-#     DATABASEURI = "postgresql://ewu2493:foobar@<IP_OF_POSTGRE_SQL_SERVER>/postgres"
-#
-# Swap out the URI below with the URI for the database created in part 2
-DATABASEURI = "sqlite:///test.db"
-
-
-#
-# This line creates a database engine that knows how to connect to the URI above
-#
+DATABASEURI = "postgresql://sm4241:u9pbm@104.196.175.120/postgres"
 engine = create_engine(DATABASEURI)
-
-
-#
-# START SQLITE SETUP CODE
-#
-# after these statements run, you should see a file test.db in your webserver/ directory
-# this is a sqlite database that you can query like psql typing in the shell command line:
-# 
-#     sqlite3 test.db
-#
-# The following sqlite3 commands may be useful:
-# 
-#     .tables               -- will list the tables in the database
-#     .schema <tablename>   -- print CREATE TABLE statement for table
-# 
-# The setup code should be deleted once you switch to using the Part 2 postgresql database
-#
 engine.execute("""DROP TABLE IF EXISTS test;""")
 engine.execute("""CREATE TABLE IF NOT EXISTS test (
   id serial,
   name text
 );""")
 engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
-#
-# END SQLITE SETUP CODE
-#
 
-
+# set the secret key.  keep this really secret:
+app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 @app.before_request
 def before_request():
-  """
-  This function is run at the beginning of every web request 
-  (every time you enter an address in the web browser).
-  We use it to setup a database connection that can be used throughout the request
-
-  The variable g is globally accessible
-  """
-  try:
-    g.conn = engine.connect()
-  except:
-    print "uh oh, problem connecting to database"
-    import traceback; traceback.print_exc()
-    g.conn = None
+    try:
+        g.conn = engine.connect()
+    except:
+        print "uh oh, problem connecting to database"
+        import traceback; traceback.print_exc()
+        g.conn = None
 
 @app.teardown_request
 def teardown_request(exception):
-  """
-  At the end of the web request, this makes sure to close the database connection.
-  If you don't the database could run out of memory!
-  """
-  try:
-    g.conn.close()
-  except Exception as e:
-    pass
+    try:
+        g.conn.close()
+    except Exception as e:
+        pass
 
-
-#
-# @app.route is a decorator around index() that means:
-#   run index() whenever the user tries to access the "/" path using a GET request
-#
-# If you wanted the user to go to e.g., localhost:8111/foobar/ with POST or GET then you could use
-#
-#       @app.route("/foobar/", methods=["POST", "GET"])
-#
-# PROTIP: (the trailing / in the path is important)
-# 
-# see for routing: http://flask.pocoo.org/docs/0.10/quickstart/#routing
-# see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
-#
+    
 @app.route('/')
 def index():
-  """
-  request is a special object that Flask provides to access web request information:
-
-  request.method:   "GET" or "POST"
-  request.form:     if the browser submitted a form, this contains the data in the form
-  request.args:     dictionary of URL arguments e.g., {a:1, b:2} for http://localhost?a=1&b=2
-
-  See its API: http://flask.pocoo.org/docs/0.10/api/#incoming-request-data
-  """
-
-  # DEBUG: this is debugging code to see what request looks like
-  print request.args
+    return render_template("index.html")
 
 
-  #
-  # example of a database query
-  #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
-
-  #
-  # Flask uses Jinja templates, which is an extension to HTML where you can
-  # pass data to a template and dynamically generate HTML based on the data
-  # (you can think of it as simple PHP)
-  # documentation: https://realpython.com/blog/python/primer-on-jinja-templating/
-  #
-  # You can see an example template in templates/index.html
-  #
-  # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be 
-  # accessible as a variable in index.html:
-  #
-  #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-  #     <div>{{data}}</div>
-  #     
-  #     # creates a <div> tag for each element in data
-  #     # will print: 
-  #     #
-  #     #   <div>grace hopper</div>
-  #     #   <div>alan turing</div>
-  #     #   <div>ada lovelace</div>
-  #     #
-  #     {% for n in data %}
-  #     <div>{{n}}</div>
-  #     {% endfor %}
-  #
-  context = dict(data = names)
+@app.route('/customerLogin', methods=['POST', 'GET'])
+def gotoCustomerLogin():
+    error = None
+    if request.method == 'POST':
+        ssn = request.form['username']
+        print ssn
+        query = 'SELECT u.password,u.name FROM users as u, customers as c WHERE u.ssn=%s and u.ssn=c.ssn;'
+        cursor = g.conn.execute(query, ssn)
+        if cursor.rowcount == 0 :
+            error = 'Invalid username/password'
+        else:
+            row = cursor.fetchone()
+            print row[0]
+            if row[0] == request.form['password']:
+                session['logged_in'] = True
+                session['username'] = ssn
+                return redirect(url_for('ordersDisplay'))
+            else:
+                error = 'Invalid username/password'
+    
+    return render_template('loginCustomer.html', error=error)
 
 
-  #
-  # render_template looks in the templates/ folder for files.
-  # for example, the below file reads template/index.html
-  #
-  return render_template("index.html", **context)
+@app.route('/employeeLogin', methods=['POST','GET'])
+def gotoEmployeeLogin():
+    error = None
+    if request.method == 'POST':
+        ssn = request.form['username']
+        print ssn
+        cursor = g.conn.execute("SELECT u.password,u.name FROM users as u, employees as e WHERE u.ssn=e.ssn and u.ssn=%s;", ssn)
+        if cursor.rowcount == 0 :
+            error = 'Invalid username/password'
+        else:
+            row = cursor.fetchone()
+            print row[0]
+            if row[0] == request.form['password']:
+                session['logged_in'] = True
+                session['username'] = ssn
+                return redirect(url_for('employeeDashboard'))
+            else:
+                error = 'Invalid username/password'
+    
+    return render_template('loginEmployee.html', error=error)
+    
 
+@app.route('/orders') 
+def ordersDisplay():
+    error = None
+    ssn = session['username']
+    print ssn
+    query = 'SELECT o.order_id, o.submitted_date, o.est_delivery_date FROM orders as o, users_orders as uo WHERE o.order_id = uo.order_id and uo.ssn=%s;'
+    curr = g.conn.execute(query, ssn)
+    if curr.rowcount == 0:
+        error = 'No Orders Found'
+        context = dict(error=error)
+    else:
+        order_ids = curr.fetchall()
+        print order_ids
+        context = dict(data = order_ids, error=error)
+        print context
+    return render_template('orders.html', **context)
+
+
+@app.route('/deleteOrder', methods=['POST']) 
+def deleteOrder():
+    orderid = request.form['orderid']
+    ssn = session['username']
+    query1 = 'DELETE FROM order_line WHERE order_line_id IN (SELECT order_line_id FROM orders_orderline WHERE order_id=%s);'
+    curr1 = g.conn.execute(query1, orderid)
+    query2 = 'DELETE FROM orders WHERE order_id=%s;'
+    curr2 = g.conn.execute(query2, orderid)
+    return redirect(url_for('ordersDisplay'))
+
+
+@app.route('/orderDetails', methods=['GET']) 
+def orderDetails():
+    print request.args
+    orderid = request.args['orderid']
+    query = 'SELECT ool.order_id, p.name, p.product_type, ol.quantity,  p.price, p.price*ol.quantity as total_price, ol.product_id FROM orders_orderline as ool, order_line as ol, products as p WHERE ool.order_line_id = ol.order_line_id and ool.order_id=%s and ol.product_id = p.product_id;'
+    curr = g.conn.execute(query, orderid)
+    order_details = curr.fetchall()
+    context = dict(orderdetails=order_details)
+    return render_template('orderDetails.html', **context)
+
+
+@app.route('/employeeDashboard') 
+def employeeDashboard():
+    error = None
+    if 'username' in session:
+        ssn = session['username']
+        print ssn
+        query='SELECT u.name, e.designation, d.dept_name, u.phone_number, u.email_id FROM department as d, employees_department as ed, employees as e, users as u WHERE e.ssn=u.ssn and e.ssn=ed.ssn and d.dept_id=ed.dept_id and u.ssn = %s;'
+        curr = g.conn.execute(query, ssn)
+        empDetail = curr.fetchone()
+        context = dict(empdata = empDetail, error=error)
+        return render_template('employeeDashboard.html', **context)
+    else: return redirect(url_for('index'))
+
+
+@app.route('/products', methods=['GET'])
+def products():
+    query='SELECT p.product_id, p.name, p.product_type, p.price, p.qty_in_stock, SUM(ol.quantity), f.name, f.region FROM product_factory as pf, factory as f,products as p LEFT JOIN order_line as ol ON p.product_id=ol.product_id WHERE p.product_id=pf.product_id and pf.factory_id=f.factory_id GROUP BY p.product_id,f.name,f.region ORDER BY p.name ASC;'
+    curr = g.conn.execute(query)
+    products = curr.fetchall()
+    context = dict(products=products)
+    return render_template('products.html', **context)
+
+
+@app.route('/addNewProduct', methods=['GET'])
+def addNewProduct():
+    m = request.args.getlist("messages")
+    print m
+    if m is None:
+        print "No message"
+    query2 = 'SELECT ssn from employees'
+    cursor = g.conn.execute(query2)
+    ssnlist = []
+    for s in cursor.fetchall():
+        ssnlist.append(s[0])
+    context = dict(slist = ssnlist, messages=m)    
+    return render_template('addNewProduct.html', **context)
+
+
+@app.route('/addProduct', methods=['POST'])
+def addProduct():
+    print "inside addProduct"
+    messages = []
+    productName = request.form['productName']
+    if len(productName) ==0:
+        messages.append("Please fill Product Name")
+    print productName
+    
+    productType = request.form['productType']
+    if len(productType) ==0:
+        messages.append("Please fill Product Type")
+    print productType
+    
+    price = request.form['price']
+    if len(price) ==0:
+        messages.append("Please fill Product Price")
+    print price
+    
+    qtyinstock = request.form['qtyinstock']
+    if len(qtyinstock) ==0:
+        messages.append("Please fill Quantity in Stock")
+    print qtyinstock
+    
+    factoryname = request.form['factoryname']
+    if len(factoryname) ==0:
+        messages.append("Please fill Factory Name")
+    print factoryname
+    
+    brand = request.form['brand']
+    if len(brand) ==0:
+        messages.append("Please fill Factory Brand")
+    print brand
+    
+    factoryregion = request.form['factoryregion']
+    if len(factoryregion) ==0:
+        messages.append("Please fill Factory Region")
+    print factoryregion
+    
+    employeessn = request.form['employeessn']
+    if len(employeessn) ==0:
+        messages.append("Please select Employee SSN")
+    print employeessn
+    
+    ssn = session['username']
+    print ssn
+    
+    if len(messages) ==0:
+        query = 'INSERT INTO products(name, product_type, price, qty_in_stock) VALUES (%s,%s,%s,%s) RETURNING product_id;'
+        curr = g.conn.execute(query, productName,productType,price,qtyinstock)
+        print "product insert successful"
+        pid = curr.fetchone()[0]
+        print pid
+
+        query = 'INSERT INTO factory(name, brand, region) VALUES (%s,%s,%s) RETURNING factory_id;'
+        curr = g.conn.execute(query,factoryname,brand,factoryregion)
+        print "factory insert successful"
+        fid = curr.fetchone()[0]
+        print fid
+
+        query = 'INSERT INTO product_factory(product_id, factory_id) VALUES (%s,%s);'
+        curr = g.conn.execute(query, pid,fid)
+        print "product factory insert successful"
+
+        query = 'INSERT INTO employees_products(ssn, product_id) VALUES (%s,%s);'
+        curr = g.conn.execute(query, employeessn, pid)
+        messages.append("Product Added Successfully")
+        
+    context = dict(messages=messages)
+    return redirect(url_for('addNewProduct', **context))
+
+
+@app.route('/searchDirectory')
+def searchDirectory():
+    return render_template('search.html')
+
+
+@app.route('/search', methods=['POST', 'GET'])
+def search():
+    error = None
+    if request.method == 'POST':
+        searchBy = request.form['searchBy']
+        searchValue = request.form['searchValue']
+        if searchBy=='name':
+            query='SELECT u.name, e.designation, d.dept_name, u.phone_number, u.email_id FROM department as d, employees_department as ed, employees as e, users as u WHERE e.ssn=u.ssn and e.ssn=ed.ssn and d.dept_id=ed.dept_id and u.name LIKE %s;'
+        elif searchBy=='designation':
+            query='SELECT u.name, e.designation, d.dept_name, u.phone_number, u.email_id FROM department as d, employees_department as ed, employees as e, users as u WHERE e.ssn=u.ssn and e.ssn=ed.ssn and d.dept_id=ed.dept_id and e.designation LIKE %s;'
+        elif searchBy=='department':
+            query='SELECT u.name, e.designation, d.dept_name, u.phone_number, u.email_id FROM department as d, employees_department as ed, employees as e, users as u WHERE e.ssn=u.ssn and e.ssn=ed.ssn and d.dept_id=ed.dept_id and d.dept_name LIKE %s;'
+        else: 
+            error = 'Please select a valid Search option'
+            context = dict(error=error)
+            return render_template('search.html', **context)
+        
+        if searchValue=='':
+            error = 'Please enter a valid Search value'
+            context = dict(error=error)
+            return render_template('search.html', **context)
+        
+        curr = g.conn.execute(query, '%'+searchValue+'%')
+        if curr.rowcount == 0:
+            error = 'No Results Found'
+            context = dict(error=error)
+            return render_template('search.html', **context)
+
+        searchResults = curr.fetchall()
+        context = dict(searchResults=searchResults, error=error)
+        print searchResults
+        return render_template('search.html', **context)
+
+
+@app.route('/editProfile')
+def editProfile():
+    return render_template('editProfile.html')
+
+
+@app.route('/saveProfileChanges', methods=['POST'])
+def saveProfileChanges():
+    ssn = session['username']
+    emailid = request.form['emailid']
+    phoneNumber = request.form['phoneNumber']
+    address = request.form['address']
+    messages=[]
+    
+    if emailid != "":
+        if re.match(r"[^@]+@[^@]+\.[^@]+", emailid):
+            query = 'UPDATE users SET email_id=%s WHERE ssn=%s;'
+            curr = g.conn.execute(query, emailid, ssn)
+            messages.append("Email Id updated successfully")
+        else:
+            messages.append("Please enter a valid email address")
+    
+    if phoneNumber != "":
+        if len(phoneNumber) == 11:
+            query = 'UPDATE users SET phone_number=%s WHERE ssn=%s;'
+            curr = g.conn.execute(query, phoneNumber, ssn)
+            messages.append("Phone Number updated successfully")
+        else:
+            messages.append("Please enter a valid 11- digit phone number")
+    
+    if address != "":
+        if len(address) <= 255:
+            query = 'UPDATE users SET address=%s WHERE ssn=%s;'
+            curr = g.conn.execute(query, address, ssn)
+            messages.append("Address updated successfully")
+        else:
+            messages.append("Address exceeded 255 characters limit")
+    
+    context = dict(messages = messages)
+    return render_template('editProfile.html', **context)
+
+
+@app.route('/orderDetailsByProduct', methods=['GET'])
+def orderDetailsByProduct():
+    productid = request.args['productid']
+    productname = request.args['productname']
+    query='SELECT o.*, ol.quantity FROM orders as o, orders_orderline as ool, order_line as ol WHERE ool.order_line_id = ol.order_line_id and o.order_id = ool.order_id and ol.product_id =%s;'
+    curr = g.conn.execute(query, productid)
+    orderdetails = curr.fetchall()
+    
+    query2 ='SELECT u.name, d.dept_name FROM products as p, employees_products as ep, department as d, employees_department as ed, users as u WHERE ep.ssn = ed.ssn and ep.ssn=u.ssn  and ed.dept_id = d.dept_id and ep.product_id =%s;'
+    curr = g.conn.execute(query2, productid)
+    handlingDetails = curr.fetchone()
+    
+    context = dict(data = orderdetails, productname=productname, handlingDetails=handlingDetails)
+    return render_template('orderDetailsByProduct.html', **context)
+
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    session.pop('username', None)
+    return redirect(url_for('index'))
 #
 # This is an example of a different path.  You can see it at
 # 
@@ -183,26 +344,61 @@ def index():
 # notice that the functio name is another() rather than index()
 # the functions for each app.route needs to have different names
 #
-@app.route('/another')
-def another():
-  return render_template("anotherfile.html")
-
-
-# Example of adding new data to the database
-@app.route('/add', methods=['POST'])
-def add():
-  name = request.form['name']
-  print name
-  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
-  return redirect('/')
-
-
-@app.route('/login')
+#@app.route('/another')
+#def another():
+#  return render_template("anotherfile.html")
+#
+#
+## Example of adding new data to the database
+#@app.route('/add', methods=['POST'])
+#def add():
+#  name = request.form['name']
+#  print name
+#  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
+#  g.conn.execute(text(cmd), name1 = name, name2 = name);
+#  return redirect('/')
+#
+#
+##@app.route('/login')
+##def login():
+##    abort(401)
+##    this_is_never_executed()
+#
+#@app.route('/login', methods=['GET', 'POST'])
+#def login():
+#    error = None
+#    if request.method == 'POST':
+#        username = request.form['username']
+#        cursor = g.conn.execute("SELECT password FROM users WHERE ssn")
+#  entries = [dict(ssn=row[0], pwd=row[1]) for row in cursor.fetchall()]
+#            error = 'Invalid username'
+#        elif request.form['password'] != app.config['PASSWORD']:
+#            error = 'Invalid password'
+#        else:
+#            session['logged_in'] = True
+#            flash('You were logged in')
+#            return redirect(url_for('show_entries'))
+#    return render_template('login.html', error=error)
+@app.route('/login', methods=['POST']) 
 def login():
-    abort(401)
-    this_is_never_executed()
-
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        cursor = g.conn.execute("SELECT password,name FROM users WHERE ssn=%s", username)
+        row = cursor.fetchone()
+        if row[0] == request.form['password']:
+#            query = 'SELECT * FROM customers WHERE ssn=%s'
+#            result = g.conn.execute(query, username)
+            name = row[1]
+            query = 'SELECT * FROM products'
+            result = g.conn.execute(query)
+            product_list = []
+            for r in result.fetchall():
+                product_list.append(r)
+            
+            return render_template('summary.html', info=cust_info)
+        else: error = 'Invalid username'
+        return render_template('login.html', error=error)
 
 if __name__ == "__main__":
   import click
@@ -216,13 +412,9 @@ if __name__ == "__main__":
     """
     This function handles command line parameters.
     Run the server using
-
         python server.py
-
     Show the help text using
-
         python server.py --help
-
     """
 
     HOST, PORT = host, port

@@ -1,0 +1,86 @@
+<html>
+<title>WMP</title>
+
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        
+        .css-serial {
+            counter-reset: serial-number;
+        }
+        
+        .css-serial td:first-child:before {
+            counter-increment: serial-number;
+            content: counter(serial-number);
+        }
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+        
+        .alignleft {
+            float: left;
+        }
+        
+        .alignright {
+            float: right;
+        }
+    </style>
+    <script>
+        function goBack() {
+            window.history.back()
+        }
+    </script>
+</head>
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Quantity Details</h2>
+    <div>
+        <h3 class="alignleft">Product Name: {{ productname }}</h3>
+        <h3 class="alignright">Handled by: {{ handlingDetails[0] }} ({{ handlingDetails[1] }})</h3>
+    </div>
+    <table id="ordersDetailsByProductTable" class="css-serial">
+        <tr>
+            <th>#</th>
+            <th>Order ID</th>
+            <th>Quantity Ordered</th>
+            <th>Submitted Date</th>
+            <th>Estimated Delivery Date</th>
+        </tr>
+        {% for orderline in data %}
+        <tr>
+            <td></td>
+            <td>{{ orderline[0] }}</td>
+            <td>{{ orderline[3] }}</td>
+            <td>{{ orderline[1] }}</td>
+            <td>{{ orderline[2] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <button type="button" class="cancelbtn" onclick="goBack()">Back</button>
+
+</body>
+
+</html>

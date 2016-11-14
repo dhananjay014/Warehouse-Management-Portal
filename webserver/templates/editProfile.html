@@ -1,0 +1,74 @@
+<html>
+<title>WMP</title>
+
+<head>
+
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+        }
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+        
+        .home {
+            position: absolute;
+            top: 5;
+            right: 70;
+        }
+        
+        fieldset {
+            width: 500px;
+        }
+        
+        label.field {
+            text-align: right;
+            width: 150px;
+            float: left;
+        }
+        
+        input.textbox {
+            width: 300px;
+            float: left;
+        }
+    </style>
+
+</head>
+
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">
+            <span class="glyphicon glyphicon-log-out"></span>Log out
+        </a>
+        {% endif %}
+    </div>
+    <div class=home>
+        {% if session.logged_in %}
+        <a href="{{ url_for('employeeDashboard') }}">Home</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Edit Profile</h2>{% if messages %}{% for message in messages %}
+    <p class=error>{{ message }}</p>{% endfor %}{% endif %}
+    <form action="{{url_for('saveProfileChanges')}}" method="POST" class="form-horizontal">
+        <p>
+            <label class="field" for="emailid">Email ID: </label>
+            <input type="email" name="emailid">
+        </p>
+        <p>
+            <label class="field" for="phoneNumber">Phone Number: </label>
+            <input type="textbox" onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="phoneNumber">
+        </p>
+        <p>
+            <label class="field" for="address">Address: </label>
+            <textarea rows="4" cols="50" name="address"></textarea>
+        </p>
+        <button style="margin-left: 4cm;" type="submit">Save Changes</button>
+    </form>
+</body>
+
+</html>

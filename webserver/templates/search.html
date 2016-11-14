@@ -1,0 +1,107 @@
+<html>
+<title>WMP</title>
+
+<head>
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+        }
+        
+        input[type=text],
+        input[type=password] {
+            width: 140px;
+            padding: 5px 5px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        
+        .css-serial {
+            counter-reset: serial-number;
+        }
+        
+        .css-serial td:first-child:before {
+            counter-increment: serial-number;
+            content: counter(serial-number);
+        }
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+        
+        .home {
+            position: absolute;
+            top: 5;
+            right: 70;
+        }
+    </style>
+</head>
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out</a> {% endif %}
+    </div>
+    <div class=home>
+        {% if session.logged_in %}
+        <a href="{{ url_for('employeeDashboard') }}">Home</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Search</h2>
+
+    <form action="{{url_for('search')}}" method="POST">
+        <input type="radio" name="searchBy" value="name" checked> Name
+        <input type="radio" name="searchBy" value="designation"> Designation
+        <input type="radio" name="searchBy" value="department"> Department
+        <br>
+        <input type="text" name="searchValue" />
+        <br>
+        <button type="submit">Search</button>
+    </form>
+    {% if error %}
+    <p class=error style="color: #D8000C;"> {{ error }}{% elif searchResults %}
+        <table id="searchTable" class="css-serial">
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Designation</th>
+                <th>Department</th>
+                <th>Phone Number</th>
+                <th>Email ID</th>
+            </tr>
+            {% for result in searchResults %}
+            <tr>
+                <td></td>
+                <td>{{ result[0] }}</td>
+                <td>{{ result[1] }}</td>
+                <td>{{ result[2] }}</td>
+                <td>{{ result[3] }}</td>
+                <td>{{ result[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+</body>
+
+</html>

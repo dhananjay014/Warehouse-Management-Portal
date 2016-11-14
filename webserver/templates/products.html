@@ -1,0 +1,95 @@
+<html>
+<title>WMP</title>
+
+<head>
+    <style>
+        form {
+            border: 3px solid #f1f1f1;
+        }
+        
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        
+        .css-serial {
+            counter-reset: serial-number;
+        }
+        
+        .css-serial td:first-child:before {
+            counter-increment: serial-number;
+            content: counter(serial-number);
+        }
+        
+        .topcorner {
+            position: absolute;
+            top: 5;
+            right: 10;
+        }
+    </style>
+    <script>
+        function goBack() {
+            window.history.back()
+        }
+    </script>
+</head>
+
+<body>
+    <div class=topcorner>
+        {% if session.logged_in %}
+        <a href="{{ url_for('logout') }}">Log out</a> {% endif %}
+    </div>
+    <h1>Warehouse Management Portal</h1>
+    <h2>Products</h2>
+
+    <table id="productsTable" class="css-serial">
+        <tr>
+            <th>#</th>
+            <th>Product ID</th>
+            <th>Product Name</th>
+            <th>Product Type</th>
+            <th>Price/Unit</th>
+            <th>Quantity in Stock</th>
+            <th>Quantity Ordered</th>
+            <th>Factory Name</th>
+            <th>Factory Region</th>
+            <th>Action</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td></td>
+            <td><a href='/orderDetailsByProduct?productid={{ product[0] }}&productname={{ product[1] }}'>P{{ product[0] }}</a></td>
+            <td>{{ product[1] }}</td>
+            <td>{{ product[2] }}</td>
+            <td>{{ product[3] }}</td>
+            <td>{{ product[4] }}</td>
+            <td>{{ product[5] }}</td>
+            <td>{{ product[6] }}</td>
+            <td>{{ product[7] }}</td>
+            <form onSubmit="if(!confirm('Are you sure you want to procure more products?')){return false;}">
+                <td>
+                    <input type="submit" value="Procure" />
+                </td>
+            </form>
+
+        </tr>
+        {% endfor %}
+    </table>
+    <button type="button" class="cancelbtn" onclick="goBack()">Back</button>
+
+
+</body>
+
+</html>
