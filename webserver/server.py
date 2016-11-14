@@ -336,69 +336,7 @@ def logout():
     session.pop('logged_in', None)
     session.pop('username', None)
     return redirect(url_for('index'))
-#
-# This is an example of a different path.  You can see it at
-# 
-#     localhost:8111/another
-#
-# notice that the functio name is another() rather than index()
-# the functions for each app.route needs to have different names
-#
-#@app.route('/another')
-#def another():
-#  return render_template("anotherfile.html")
-#
-#
-## Example of adding new data to the database
-#@app.route('/add', methods=['POST'])
-#def add():
-#  name = request.form['name']
-#  print name
-#  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-#  g.conn.execute(text(cmd), name1 = name, name2 = name);
-#  return redirect('/')
-#
-#
-##@app.route('/login')
-##def login():
-##    abort(401)
-##    this_is_never_executed()
-#
-#@app.route('/login', methods=['GET', 'POST'])
-#def login():
-#    error = None
-#    if request.method == 'POST':
-#        username = request.form['username']
-#        cursor = g.conn.execute("SELECT password FROM users WHERE ssn")
-#  entries = [dict(ssn=row[0], pwd=row[1]) for row in cursor.fetchall()]
-#            error = 'Invalid username'
-#        elif request.form['password'] != app.config['PASSWORD']:
-#            error = 'Invalid password'
-#        else:
-#            session['logged_in'] = True
-#            flash('You were logged in')
-#            return redirect(url_for('show_entries'))
-#    return render_template('login.html', error=error)
-@app.route('/login', methods=['POST']) 
-def login():
-    error = None
-    if request.method == 'POST':
-        username = request.form['username']
-        cursor = g.conn.execute("SELECT password,name FROM users WHERE ssn=%s", username)
-        row = cursor.fetchone()
-        if row[0] == request.form['password']:
-#            query = 'SELECT * FROM customers WHERE ssn=%s'
-#            result = g.conn.execute(query, username)
-            name = row[1]
-            query = 'SELECT * FROM products'
-            result = g.conn.execute(query)
-            product_list = []
-            for r in result.fetchall():
-                product_list.append(r)
-            
-            return render_template('summary.html', info=cust_info)
-        else: error = 'Invalid username'
-        return render_template('login.html', error=error)
+
 
 if __name__ == "__main__":
   import click
@@ -407,7 +345,7 @@ if __name__ == "__main__":
   @click.option('--debug', is_flag=True)
   @click.option('--threaded', is_flag=True)
   @click.argument('HOST', default='0.0.0.0')
-  @click.argument('PORT', default=8111, type=int)
+  @click.argument('PORT', default=8080, type=int)
   def run(debug, threaded, host, port):
     """
     This function handles command line parameters.
